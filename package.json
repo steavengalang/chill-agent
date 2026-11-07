@@ -1,6 +1,6 @@
 {
   "name": "chill-agent",
-  "version": "1.8.2",
+  "version": "1.8.3",
   "description": "Zero-bloat Anti-Slop 2.0 Engine & Pragmatic Senior Developer Standard. Fuses Anti-Slop visual craftsmanship with Ponytail YAGNI minimalism across all coding agents.",
   "bin": {
     "chill-agent": "bin/chill-agent.js"
@@ -68,7 +68,6 @@
     "__init__.py",
     "AGENTS.md",
     "chillslop.md",
-    "antislop.md",
     "GUIDE.md",
     "INSTALL.md",
     "after-install.md",

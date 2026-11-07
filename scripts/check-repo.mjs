@@ -50,13 +50,13 @@ function emDashes() {
   const bad = []
   // The rules/ pointers ship to plugin users, so the ban covers them like any other doc.
   const files = [
-    'antislop.md',
+    'chillslop.md',
     'README.md',
     'GUIDE.md',
     'ROADMAP.md',
     'SECURITY.md',
-    'rules/antislop.md',
-    'rules/antislop.mdc',
+    'rules/chillslop.md',
+    'rules/chillslop.mdc',
     ...COMMUNITY,
     ...SKILLS,
   ]
@@ -86,7 +86,7 @@ function emDashes() {
 
 /** Every rule the core defines must have a Delivery Gate item citing it, and vice versa. */
 function gateCoverage() {
-  const core = read('antislop.md')
+  const core = read('chillslop.md')
   const defined = new Set([...core.matchAll(/^#### (R-\d{2}) —/gm)].map((m) => m[1]))
   const gate = core.split('## Delivery Gate (Mandatory)')[1] ?? ''
   const cited = new Set([...gate.matchAll(/\((R-\d{2})\)/g)].map((m) => m[1]))
@@ -103,11 +103,11 @@ function gateCoverage() {
 
 /** A skill may reference core rules by number. It may not invent one. */
 function skillReferences() {
-  const defined = new Set([...read('antislop.md').matchAll(/^#### (R-\d{2}) —/gm)].map((m) => m[1]))
+  const defined = new Set([...read('chillslop.md').matchAll(/^#### (R-\d{2}) —/gm)].map((m) => m[1]))
   const bad = []
   for (const file of SKILLS) {
     for (const r of new Set([...read(file).matchAll(/\bR-\d{2}\b/g)].map((m) => m[0]))) {
-      if (!defined.has(r)) bad.push(`${file} cites ${r}, which antislop.md does not define`)
+      if (!defined.has(r)) bad.push(`${file} cites ${r}, which chillslop.md does not define`)
     }
   }
   return bad
@@ -169,8 +169,8 @@ function registration() {
   const names = SKILLS.map((f) => f.split('/')[1])
   const core = 'antislop'
   const places = [
-    ['rules/antislop.md', read('rules/antislop.md')],
-    ['rules/antislop.mdc', read('rules/antislop.mdc')],
+    ['rules/chillslop.md', read('rules/chillslop.md')],
+    ['rules/chillslop.mdc', read('rules/chillslop.mdc')],
     ["cli/index.mjs (EXTRA_SKILLS)", read('cli/index.mjs')],
     ['cli/lib/install.mjs (SKILL_LINES)', read('cli/lib/install.mjs')],
   ]
@@ -188,7 +188,7 @@ function registration() {
 
 /** A rule's tier decides its gate block: Hard Gate 1, Purpose-Gate 2, Quality Locks 4. */
 function tiers() {
-  const core = read('antislop.md')
+  const core = read('chillslop.md')
   const part2 = core.split('## Part 2:')[1]?.split('## Part 3:')[0] ?? ''
 
   const group = {}
