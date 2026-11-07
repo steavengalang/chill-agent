@@ -13,24 +13,14 @@ export async function runCli() {
   const rawArgs = process.argv.slice(2);
   const command = rawArgs[0] || 'wizard';
 
-  if (command === 'mode' || rawArgs.includes('--mode')) {
-    const modeArgs = command === 'mode' ? rawArgs.slice(1) : rawArgs.slice(rawArgs.indexOf('--mode') + 1);
-    try {
-      console.log(configureMode(modeArgs));
-    } catch (err) {
-      console.error(`antislop: ${err.message}`);
-      process.exit(1);
-    }
-    return;
-  }
-
-  if (command === 'help' || command === '--help' || command === '-h') {
+  if (command === 'help' || rawArgs.includes('--help') || rawArgs.includes('-h')) {
     banner();
     console.log(`
 ${c.bold}USAGE:${c.reset}
   npx chill-agent                          Launch interactive setup wizard
   npx chill-agent install [--all] [--agent <name>]   Install anti-slop skills non-interactively
   npx chill-agent audit [dir] [--fix] [--report] [--all-pages]   Scan & audit all pages for AI slop
+  npx chill-agent mode [during|after|ask]   Configure global anti-slop usage mode
   npx chill-agent init-design [preset]     Generate a high-craft DESIGN.md specification
   npx chill-agent doctor                   Inspect detected coding agents and rule health
   npx chill-agent rewind [subcommand]      Run deterministic time-travel debugger & proxy
@@ -42,6 +32,17 @@ ${c.bold}PRESETS FOR init-design:${c.reset}
   editorial-paper  Warm ivory paper, literary serif headings
   micro-density    Cyberpunk HUD, compact phosphor-green telemetry
 `);
+    return;
+  }
+
+  if (command === 'mode' || rawArgs.includes('--mode')) {
+    const modeArgs = command === 'mode' ? rawArgs.slice(1) : rawArgs.slice(rawArgs.indexOf('--mode') + 1);
+    try {
+      console.log(configureMode(modeArgs));
+    } catch (err) {
+      console.error(`antislop: ${err.message}`);
+      process.exit(1);
+    }
     return;
   }
 

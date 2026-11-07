@@ -42,7 +42,7 @@ const HEAD = '| What it covers | The patterns it names |\n|----------------|----
 export function buildIndex() {
   const names = fs
     .readdirSync(path.join(root, 'skills'), { withFileTypes: true })
-    .filter((e) => e.isDirectory())
+    .filter((e) => e.isDirectory() && e.name.startsWith('antislop'))
     .map((e) => e.name)
 
   const unlisted = names.filter((n) => !NOTES[n])

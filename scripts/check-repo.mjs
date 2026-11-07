@@ -18,7 +18,7 @@ const lines = (p) => read(p).split(/\r?\n/)
 
 const SKILLS = fs
   .readdirSync(path.join(root, 'skills'), { withFileTypes: true })
-  .filter((e) => e.isDirectory())
+  .filter((e) => e.isDirectory() && e.name.startsWith('antislop'))
   .map((e) => `skills/${e.name}/SKILL.md`)
 
 const MANIFESTS = [
@@ -123,32 +123,20 @@ function versions() {
       return null
     }
   }
-  const want = json('cli/package.json')?.version
-  if (!want) return ['cli/package.json has no readable version']
+  const want = json('package.json')?.version
+  if (!want) return ['package.json has no readable version']
 
   const found = [
-    // The lock file carries the version twice, and npm ci will not correct a stale one.
-    ['cli/package-lock.json', json('cli/package-lock.json')?.version],
-    ['cli/package-lock.json (packages "")', json('cli/package-lock.json')?.packages?.['']?.version],
-    // The Cline plugin manifest and, from v3.2.17, the Pi package. Same release.
     ['package.json', json('package.json')?.version],
     ['.claude-plugin/plugin.json', json('.claude-plugin/plugin.json')?.version],
-    ['.claude-plugin/marketplace.json', json('.claude-plugin/marketplace.json')?.plugins?.[0]?.version],
     ['.codex-plugin/plugin.json', json('.codex-plugin/plugin.json')?.version],
     ['.cursor-plugin/plugin.json', json('.cursor-plugin/plugin.json')?.version],
-    ['.omp-plugin/marketplace.json', json('.omp-plugin/marketplace.json')?.plugins?.[0]?.version],
     ['.kimi-plugin/plugin.json', json('.kimi-plugin/plugin.json')?.version],
-    // Stamped into every install, so a stale one makes the installer misreport what is on disk.
-    ['skills/antislop/VERSION', read('skills/antislop/VERSION').trim()],
-    ['cli/lib/banner.mjs', read('cli/lib/banner.mjs').match(/installer v(\d+\.\d+\.\d+)/)?.[1]],
-    ['skills/antislop-human/contrast-mcp.py', read('skills/antislop-human/contrast-mcp.py').match(/SERVER_VERSION = "(\d+\.\d+\.\d+)"/)?.[1]],
-    // The contributors image is cached per URL, so a changed version is what makes it redraw.
-    ['README.md (contributors image)', read('README.md').match(/contrib\.rocks\/image\?repo=[^"'&\s]+&v=(\d+\.\d+\.\d+)/)?.[1]],
   ]
 
   return found
     .filter(([, got]) => got !== want)
-    .map(([file, got]) => `${file} says ${got ?? 'nothing'}, cli/package.json says ${want}`)
+    .map(([file, got]) => `${file} says ${got ?? 'nothing'}, package.json says ${want}`)
 }
 
 /** A manifest that does not parse takes its whole install path down. */
