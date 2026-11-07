@@ -5,12 +5,24 @@ import { parseArgs } from 'node:util';
 import { banner, c, select, multiselect, confirm } from './prompts.js';
 import { detectAgents } from './detector.js';
 import { AVAILABLE_SKILLS, copySkillsToProject, generatePointerBlock, injectPointerIntoFile } from './installer.js';
-import { scanDirectory, printAuditReport } from './auditor.js';
+import { scanDirectory, printAuditReport, auditAllPages, generateAuditReport, autoFixFile } from './auditor.js';
 import { DESIGN_PRESETS } from './presets.js';
+import { configureMode } from '../cli/lib/settings.mjs';
 
 export async function runCli() {
   const rawArgs = process.argv.slice(2);
   const command = rawArgs[0] || 'wizard';
+
+  if (command === 'mode' || rawArgs.includes('--mode')) {
+    const modeArgs = command === 'mode' ? rawArgs.slice(1) : rawArgs.slice(rawArgs.indexOf('--mode') + 1);
+    try {
+      console.log(configureMode(modeArgs));
+    } catch (err) {
+      console.error(`antislop: ${err.message}`);
+      process.exit(1);
+    }
+    return;
+  }
 
   if (command === 'help' || command === '--help' || command === '-h') {
     banner();
@@ -18,7 +30,7 @@ export async function runCli() {
 ${c.bold}USAGE:${c.reset}
   npx chill-agent                          Launch interactive setup wizard
   npx chill-agent install [--all] [--agent <name>]   Install anti-slop skills non-interactively
-  npx chill-agent audit [dir] [--json]     Scan code & copy for AI slop cliches
+  npx chill-agent audit [dir] [--fix] [--report] [--all-pages]   Scan & audit all pages for AI slop
   npx chill-agent init-design [preset]     Generate a high-craft DESIGN.md specification
   npx chill-agent doctor                   Inspect detected coding agents and rule health
   npx chill-agent rewind [subcommand]      Run deterministic time-travel debugger & proxy
@@ -47,32 +59,45 @@ ${c.bold}PRESETS FOR init-design:${c.reset}
 
   if (command === 'audit' || command === 'lint' || command === 'scan') {
     const isFix = rawArgs.includes('--fix');
+    const isReport = rawArgs.includes('--report');
+    const isAllPages = rawArgs.includes('--all-pages') || rawArgs.includes('--pages');
+    const isJson = rawArgs.includes('--json');
     const targetDir = rawArgs[1] && !rawArgs[1].startsWith('--')
       ? path.resolve(process.cwd(), rawArgs[1])
       : process.cwd();
 
+    const auditData = auditAllPages(targetDir);
+
     if (isFix) {
-      const { autoFixFile } = await import('./auditor.js');
       let fixCount = 0;
-      function walkFix(dir) {
-        const entries = fs.readdirSync(dir, { withFileTypes: true });
-        for (const e of entries) {
-          if (e.isDirectory() && !['node_modules', '.git', '.chillrewind', 'dist'].includes(e.name)) {
-            walkFix(path.join(dir, e.name));
-          } else if (e.isFile() && ['.js', '.jsx', '.ts', '.tsx', '.html', '.css', '.md'].some(ext => e.name.endsWith(ext))) {
-            if (autoFixFile(path.join(dir, e.name))) fixCount++;
-          }
+      for (const pr of auditData.pageResults) {
+        if (pr.findings.length > 0 && autoFixFile(pr.page.file)) {
+          fixCount++;
         }
       }
-      walkFix(targetDir);
-      console.log(`\n${c.emerald}✔ Anti-Slop Auto-Fix Completed:${c.reset} Remedied slop patterns in ${c.bold}${fixCount}${c.reset} files.`);
+      console.log(`\n${c.emerald}✔ Anti-Slop Auto-Fix Completed:${c.reset} Remedied slop patterns across ${c.bold}${fixCount}${c.reset} audited files.`);
     }
 
-    const findings = scanDirectory(targetDir);
-    if (rawArgs.includes('--json')) {
-      console.log(JSON.stringify(findings, null, 2));
+    if (isReport) {
+      const rep = generateAuditReport(auditData, targetDir);
+      console.log(`\n${c.emerald}✔ Anti-Slop Mode 2 Report Generated:${c.reset} ${c.bold}${rep.reportPath}${c.reset}`);
+    }
+
+    if (isJson) {
+      console.log(JSON.stringify(auditData, null, 2));
     } else {
-      printAuditReport(findings, targetDir);
+      if (isAllPages) {
+        console.log(`\n${c.bold}Discovered ${auditData.totalPages} Pages & Component Entrypoints:${c.reset}`);
+        console.log(`--------------------------------------------------------------------------------`);
+        for (const pr of auditData.pageResults) {
+          const statusIcon = pr.status === 'PASS' ? `${c.green}✔ PASS${c.reset}` : `${c.coral}✖ FAIL${c.reset}`;
+          console.log(`  ${statusIcon} [${c.bold}${String(pr.score).padStart(3)}/100${c.reset}] \`${pr.page.relPath}\` (${pr.page.type}) — ${pr.counts.high} High, ${pr.counts.medium} Med, ${pr.counts.low} Low`);
+        }
+        console.log(`--------------------------------------------------------------------------------`);
+      }
+      const allFindings = [];
+      for (const pr of auditData.pageResults) allFindings.push(...pr.findings);
+      printAuditReport(allFindings, targetDir, auditData);
     }
     return;
   }
