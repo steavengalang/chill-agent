@@ -1,6 +1,6 @@
 {
   "name": "chill-agent",
-  "version": "1.8.1",
+  "version": "1.8.2",
   "description": "Zero-bloat Anti-Slop 2.0 Engine & Pragmatic Senior Developer Standard. Fuses Anti-Slop visual craftsmanship with Ponytail YAGNI minimalism across all coding agents.",
   "bin": {
     "chill-agent": "bin/chill-agent.js"
