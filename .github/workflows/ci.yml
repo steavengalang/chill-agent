@@ -1,0 +1,26 @@
+name: ChillAgent Anti-Slop CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  audit:
+    name: Anti-Slop Code & Copy Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Run Unit Tests
+        run: node --test test/*.test.js
+
+      - name: Run Anti-Slop Codebase Audit
+        run: node bin/chill-agent.js audit

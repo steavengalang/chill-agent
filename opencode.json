@@ -1,0 +1,18 @@
+{
+  "name": "chill-agent",
+  "version": "1.2.0",
+  "description": "ChillAgent Anti-Slop & Ponytail Engine for OpenCode",
+  "skills": [
+    "./skills/chill-slop/",
+    "./skills/chill-slop-ui/",
+    "./skills/chill-slop-code/",
+    "./skills/chill-slop-copywriting/",
+    "./skills/chill-slop-human/",
+    "./skills/chill-slop-mobile/",
+    "./skills/chill-audit/",
+    "./skills/chill-review/",
+    "./skills/chill-debt/",
+    "./skills/chill-gain/",
+    "./skills/chill-help/"
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "name": "chill-agent",
+  "displayName": "ChillAgent (Anti-Slop 2.0 + Ponytail Senior Dev)",
+  "version": "1.7.0",
+  "description": "Master Negative Filter, Anti-Slop, and Pragmatic Senior Dev Standard. Combines ruthless YAGNI minimalism with Linear-grade visual engineering.",
+  "author": {
+    "name": "sann"
+  },
+  "homepage": "https://github.com/sann/chill-agent",
+  "repository": "https://github.com/sann/chill-agent",
+  "license": "MIT",
+  "keywords": [
+    "anti-slop",
+    "ponytail",
+    "design-rules",
+    "minimalism",
+    "agent-skills",
+    "yagni",
+    "ui",
+    "accessibility"
+  ],
+  "skills": [
+    "./skills/chill-slop/",
+    "./skills/chill-slop-ui/",
+    "./skills/chill-slop-code/",
+    "./skills/chill-slop-copywriting/",
+    "./skills/chill-slop-human/",
+    "./skills/chill-slop-mobile/",
+    "./skills/chill-audit/",
+    "./skills/chill-review/",
+    "./skills/chill-debt/",
+    "./skills/chill-gain/",
+    "./skills/chill-help/"
+  ],
+  "hooks": [
+    "./hooks/claude-codex-hooks.json",
+    "./hooks/claude-band.json"
+  ],
+  "types": "./hooks/band/types.d.ts"
+}

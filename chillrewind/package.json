@@ -1,0 +1,27 @@
+{
+  "name": "chillrewind",
+  "version": "1.0.0",
+  "description": "Zero-bloat deterministic time-travel debugger, anti-slop context sieve, and live stream inspector for AI coding agents.",
+  "type": "module",
+  "bin": {
+    "chillrewind": "./src/cli.ts"
+  },
+  "scripts": {
+    "start": "node --experimental-strip-types --no-warnings src/cli.ts",
+    "ui": "node --experimental-strip-types --no-warnings src/cli.ts ui",
+    "tail": "node --experimental-strip-types --no-warnings src/cli.ts tail",
+    "stats": "node --experimental-strip-types --no-warnings src/cli.ts stats"
+  },
+  "engines": {
+    "node": ">=22.6.0"
+  },
+  "keywords": [
+    "ai-agents",
+    "time-travel-debugger",
+    "llm-proxy",
+    "mcp",
+    "context-pruning",
+    "sqlite"
+  ],
+  "license": "MIT"
+}

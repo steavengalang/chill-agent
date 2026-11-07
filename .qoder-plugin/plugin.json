@@ -1,0 +1,21 @@
+{
+  "name": "ponytail",
+  "version": "1.7.0",
+  "description": "Lazy senior dev mode. Forces the simplest, shortest solution that actually works: YAGNI, stdlib first, no unrequested abstractions.",
+  "author": {
+    "name": "sann",
+    "url": "https://github.com/sann/chill-agent"
+  },
+  "homepage": "https://github.com/sann/chill-agent",
+  "repository": "https://github.com/sann/chill-agent",
+  "license": "MIT",
+  "keywords": [
+    "yagni",
+    "minimalism",
+    "code-review",
+    "productivity"
+  ],
+  "skills": "./skills/",
+  "rules": "./.qoder/rules/",
+  "hooks": "./hooks/qoder-hooks.json"
+}

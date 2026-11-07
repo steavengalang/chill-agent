@@ -1,0 +1,6 @@
+{
+  "name": "chill-agent",
+  "version": "1.7.0",
+  "description": "ChillAgent Anti-Slop 2.0 & Pragmatic Senior Dev Mode. Forces smallest working diff, YAGNI, standard library first, zero AI slop.",
+  "contextFileName": "AGENTS.md"
+}

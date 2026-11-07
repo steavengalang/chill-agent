@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ChillRewind — Deterministic Agent Time-Travel Inspector</title>
+  <style>
+    :root {
+      --bg-canvas: #09090b;
+      --bg-panel: #101014;
+      --bg-elevated: #16161c;
+      --bg-hover: #1e1e26;
+      --border: #26262e;
+      --border-focus: #3f3f4e;
+      --text-primary: #f4f4f6;
+      --text-secondary: #a1a1aa;
+      --text-muted: #63636e;
+      --emerald: #10b981;
+      --emerald-bg: rgba(16, 185, 129, 0.12);
+      --amber: #f59e0b;
+      --amber-bg: rgba(245, 158, 11, 0.12);
+      --rose: #f43f5e;
+      --rose-bg: rgba(244, 63, 94, 0.12);
+      --indigo: #818cf8;
+      --indigo-bg: rgba(129, 140, 248, 0.14);
+      --mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, ui-monospace, monospace;
+      --sans: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg-canvas);
+      color: var(--text-primary);
+      font-family: var(--sans);
+      font-size: 13px;
+      height: 100vh;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: 48px 1fr;
+      -webkit-font-smoothing: antialiased;
+    }
+    header {
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      font-size: 14px;
+    }
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--emerald);
+      box-shadow: 0 0 8px var(--emerald);
+    }
+    .metrics-bar {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      font-family: var(--mono);
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+    }
+    .metric-item { display: flex; align-items: center; gap: 6px; }
+    .metric-label { color: var(--text-muted); font-family: var(--sans); }
+    .kbd {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+    main {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      height: calc(100vh - 48px);
+    }
+    aside {
+      background: var(--bg-panel);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .section-header {
+      padding: 10px 14px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .session-list {
+      overflow-y: auto;
+      flex: 1;
+    }
+    .session-card {
+      padding: 11px 14px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.1s ease;
+    }
+    .session-card:hover { background: var(--bg-hover); }
+    .session-card.active {
+      background: var(--bg-elevated);
+      border-left: 2px solid var(--indigo);
+      padding-left: 12px;
+    }
+    .session-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--mono);
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+    .session-sub {
+      display: flex;
+      justify-content: space-between;
+      color: var(--text-muted);
+      font-size: 11px;
+      font-family: var(--mono);
+    }
+    .workspace {
+      display: grid;
+      grid-template-rows: 116px 1fr 34px;
+      height: 100%;
+      overflow: hidden;
+    }
+    .scrubber-pane {
+      background: var(--bg-canvas);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 10px 18px;
+      overflow-x: auto;
+    }
+    .timeline-track {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 64px;
+    }
+    .step-node {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 12px;
+      min-width: 128px;
+      cursor: pointer;
+      transition: all 0.12s ease;
+      position: relative;
+      user-select: none;
+    }
+    .step-node:hover { border-color: var(--border-focus); transform: translateY(-1px); }
+    .step-node.selected {
+      background: var(--bg-elevated);
+      border-color: var(--indigo);
+      box-shadow: 0 0 0 1px var(--indigo);
+    }
+    .step-node-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--mono);
+      font-size: 11px;
+      margin-bottom: 5px;
+    }
+    .badge {
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+    .badge-replay { background: var(--emerald-bg); color: var(--emerald); }
+    .badge-live { background: rgba(255,255,255,0.07); color: var(--text-secondary); }
+    .badge-fork { background: var(--indigo-bg); color: var(--indigo); }
+    .badge-pruned { background: var(--amber-bg); color: var(--amber); }
+    .connector { width: 16px; height: 1px; background: var(--border); flex-shrink: 0; }
+    .inspector-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      overflow: hidden;
+    }
+    .pane {
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .pane-toolbar {
+      height: 38px;
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border);
+      padding: 0 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .code-view {
+      flex: 1;
+      overflow: auto;
+      padding: 14px;
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.55;
+      color: #d4d4d8;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .btn {
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 5px 10px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.12s;
+    }
+    .btn:hover { background: var(--bg-hover); border-color: var(--border-focus); }
+    .btn-primary {
+      background: var(--indigo);
+      color: #09090b;
+      border-color: var(--indigo);
+      font-weight: 600;
+    }
+    .btn-primary:hover { opacity: 0.92; background: var(--indigo); }
+    footer {
+      background: var(--bg-panel);
+      border-top: 1px solid var(--border);
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.72);
+      backdrop-filter: blur(3px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal {
+      width: 680px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-focus);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 24px 48px rgba(0,0,0,0.6);
+    }
+    .modal-body { padding: 16px; }
+    textarea {
+      width: 100%;
+      height: 260px;
+      background: var(--bg-canvas);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px;
+      font-family: var(--mono);
+      font-size: 12px;
+      resize: vertical;
+      outline: none;
+    }
+    textarea:focus { border-color: var(--indigo); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <span class="pulse-dot" id="sseDot"></span>
+      <span>ChillRewind</span>
+      <span class="badge badge-fork">DAG Time-Travel & SlopSieve</span>
+    </div>
+    <div class="metrics-bar">
+      <div class="metric-item">
+        <span class="metric-label">Saved</span>
+        <span id="totSavedUsd" style="color: var(--emerald); font-weight: 600;">$0.0000</span>
+      </div>
+      <div class="metric-item">
+        <span class="metric-label">Replayed</span>
+        <span id="totSavedTok">0 tok</span>
+      </div>
+      <div class="metric-item">
+        <span class="metric-label">Slop Pruned</span>
+        <span id="totPrunedTok" style="color: var(--amber);">0 tok</span>
+      </div>
+      <div class="metric-item">
+        <span class="kbd">←</span><span class="kbd">→</span>
+        <span class="metric-label">Scrub</span>
+        <span class="kbd">F</span>
+        <span class="metric-label">Fork</span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <aside>
+      <div class="section-header">
+        <span>Execution Sessions (DAG)</span>
+        <button class="btn" onclick="loadSessions()" style="padding: 2px 6px; font-size: 10px;">Refresh</button>
+      </div>
+      <div class="session-list" id="sessionList"></div>
+    </aside>
+
+    <section class="workspace">
+      <div class="scrubber-pane">
+        <div class="timeline-track" id="timelineTrack">
+          <span style="color: var(--text-muted); font-family: var(--mono);">Select a session to inspect deterministic steps...</span>
+        </div>
+      </div>
+
+      <div class="inspector-grid">
+        <div class="pane">
+          <div class="pane-toolbar">
+            <span style="font-weight: 600; color: var(--text-secondary);">Canonical Request Payload (Post-SlopSieve)</span>
+            <span id="reqHashBadge" class="kbd">sha256: —</span>
+          </div>
+          <pre class="code-view" id="reqViewer">// Select a step node above</pre>
+        </div>
+
+        <div class="pane" style="border-right: none;">
+          <div class="pane-toolbar">
+            <span style="font-weight: 600; color: var(--text-secondary);">Upstream / Cached Response & Tool Calls</span>
+            <button class="btn btn-primary" onclick="openForkModal()" id="forkBtn" disabled>⑂ Mutate & Fork Step</button>
+          </div>
+          <pre class="code-view" id="resViewer">// Response payload will appear here</pre>
+        </div>
+      </div>
+
+      <footer>
+        <span id="liveEventTicker">⚡ PonyTail SSE stream listening on /events...</span>
+        <span id="stepMetaFooter">Step: —</span>
+      </footer>
+    </section>
+  </main>
+
+  <div class="modal-backdrop" id="forkModal">
+    <div class="modal">
+      <div class="pane-toolbar">
+        <span style="font-weight: 600;">⑂ Time-Travel Fork & Deterministically Override Response</span>
+        <button class="btn" onclick="closeForkModal()">Esc</button>
+      </div>
+      <div class="modal-body">
+        <p style="color: var(--text-secondary); margin-bottom: 10px;">
+          Edit the JSON response or tool-call arguments for <strong id="forkStepLabel">Step #0</strong>. ChillRewind will branch a new session in SQLite where steps prior to this point replay at $0 cost.
+        </p>
+        <textarea id="forkJsonInput" spellcheck="false"></textarea>
+        <div id="forkResultBox" style="margin-top: 10px; display: none; padding: 10px; background: var(--bg-canvas); border: 1px solid var(--emerald); border-radius: 6px; font-family: var(--mono); font-size: 11px; color: var(--emerald);"></div>
+        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px;">
+          <button class="btn" onclick="closeForkModal()">Cancel</button>
+          <button class="btn btn-primary" onclick="submitFork()">Create Branched Session</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let sessions = [];
+    let currentSessionId = null;
+    let currentSteps = [];
+    let selectedStepIdx = 0;
+
+    async function loadSessions() {
+      const res = await fetch('/api/sessions');
+      const data = await res.json();
+      sessions = data.sessions || [];
+      let usd = 0, tok = 0, pruned = 0;
+      sessions.forEach(s => {
+        usd += s.cost_saved_usd || 0;
+        tok += s.tokens_saved || 0;
+        pruned += s.tokens_pruned || 0;
+      });
+      document.getElementById('totSavedUsd').textContent = '$' + usd.toFixed(4);
+      document.getElementById('totSavedTok').textContent = tok.toLocaleString() + ' tok';
+      document.getElementById('totPrunedTok').textContent = pruned.toLocaleString() + ' tok';
+
+      const container = document.getElementById('sessionList');
+      container.innerHTML = sessions.map(s => `
+        <div class="session-card ${s.id === currentSessionId ? 'active' : ''}" onclick="selectSession('${s.id}')">
+          <div class="session-top">
+            <span style="font-weight: 600; color: var(--text-primary);">${s.id}</span>
+            ${s.parent_id ? `<span class="badge badge-fork">⑂ ${s.parent_id.slice(0, 10)}@${s.fork_step}</span>` : `<span class="badge badge-live">${s.step_count || 0} steps</span>`}
+          </div>
+          <div class="session-sub">
+            <span>${(s.cmd || 'agent').slice(0, 22)}</span>
+            <span style="color: var(--emerald);">$${(s.cost_saved_usd || 0).toFixed(3)} saved</span>
+          </div>
+        </div>
+      `).join('');
+
+      if (!currentSessionId && sessions.length > 0) {
+        const urlSid = new URLSearchParams(location.search).get('session');
+        selectSession(urlSid || sessions[0].id);
+      }
+    }
+
+    async function selectSession(sid) {
+      currentSessionId = sid;
+      const res = await fetch('/api/sessions/' + encodeURIComponent(sid));
+      const data = await res.json();
+      currentSteps = data.steps || [];
+      renderSessionsSelection();
+      renderTimeline();
+      if (currentSteps.length > 0) {
+        selectStep(currentSteps.length - 1);
+      } else {
+        document.getElementById('reqViewer').textContent = '// No recorded steps in this session yet.';
+        document.getElementById('resViewer').textContent = '// Run: chillrewind run -- <your_agent_cmd>';
+        document.getElementById('forkBtn').disabled = true;
+      }
+    }
+
+    function renderSessionsSelection() {
+      document.querySelectorAll('.session-card').forEach(el => {
+        el.classList.toggle('active', el.textContent.includes(currentSessionId));
+      });
+    }
+
+    function renderTimeline() {
+      const track = document.getElementById('timelineTrack');
+      if (currentSteps.length === 0) {
+        track.innerHTML = `<span style="color: var(--text-muted); font-family: var(--mono);">0 steps recorded for ${currentSessionId}</span>`;
+        return;
+      }
+      track.innerHTML = currentSteps.map((st, idx) => {
+        const badge = st.replayed === 2
+          ? `<span class="badge badge-fork">MOCK 0ms</span>`
+          : st.replayed === 1
+          ? `<span class="badge badge-replay">REPLAY 0ms</span>`
+          : `<span class="badge badge-live">${st.latency_ms}ms</span>`;
+        const prunePill = st.pruned_bytes > 0
+          ? `<span class="badge badge-pruned" style="margin-left:4px;">✂️ ${(st.pruned_bytes / 1024).toFixed(1)}K</span>`
+          : '';
+        return `
+          <div class="step-node ${idx === selectedStepIdx ? 'selected' : ''}" onclick="selectStep(${idx})">
+            <div class="step-node-top">
+              <span style="font-weight: 600;">#${st.step_idx}</span>
+              <div>${badge}${prunePill}</div>
+            </div>
+            <div style="font-family: var(--mono); font-size: 11px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+              ${st.model || 'llm'}
+            </div>
+            <div style="font-family: var(--mono); font-size: 10px; color: var(--text-muted); margin-top: 2px;">
+              ${st.tokens_in}→${st.tokens_out} tok
+            </div>
+          </div>
+          ${idx < currentSteps.length - 1 ? '<div class="connector"></div>' : ''}
+        `;
+      }).join('');
+    }
+
+    function selectStep(idx) {
+      if (idx < 0 || idx >= currentSteps.length) return;
+      selectedStepIdx = idx;
+      renderTimeline();
+      const st = currentSteps[idx];
+      document.getElementById('forkBtn').disabled = false;
+      document.getElementById('reqHashBadge').textContent = `sha256: ${st.hash.slice(0, 14)}…`;
+      document.getElementById('stepMetaFooter').textContent =
+        `Session: ${st.session_id} │ Step #${st.step_idx} │ Pruned: ${st.pruned_bytes} B │ Latency: ${st.latency_ms}ms`;
+      try {
+        document.getElementById('reqViewer').textContent = JSON.stringify(JSON.parse(st.req_json), null, 2);
+      } catch {
+        document.getElementById('reqViewer').textContent = st.req_json;
+      }
+      try {
+        document.getElementById('resViewer').textContent = JSON.stringify(JSON.parse(st.res_json), null, 2);
+      } catch {
+        document.getElementById('resViewer').textContent = st.res_json;
+      }
+    }
+
+    function openForkModal() {
+      const st = currentSteps[selectedStepIdx];
+      if (!st) return;
+      document.getElementById('forkStepLabel').textContent = `Step #${st.step_idx} (${st.session_id})`;
+      document.getElementById('forkResultBox').style.display = 'none';
+      try {
+        document.getElementById('forkJsonInput').value = JSON.stringify(JSON.parse(st.res_json), null, 2);
+      } catch {
+        document.getElementById('forkJsonInput').value = st.res_json;
+      }
+      document.getElementById('forkModal').classList.add('open');
+    }
+
+    function closeForkModal() {
+      document.getElementById('forkModal').classList.remove('open');
+    }
+
+    async function submitFork() {
+      const st = currentSteps[selectedStepIdx];
+      const mockResponse = document.getElementById('forkJsonInput').value;
+      const res = await fetch('/api/fork', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: currentSessionId, stepIdx: st.step_idx, mockResponse })
+      });
+      const data = await res.json();
+      const box = document.getElementById('forkResultBox');
+      box.style.display = 'block';
+      box.textContent = `✓ Created branch ${data.newSessionId} — Run: ${data.resumeCommand}`;
+      await loadSessions();
+      await selectSession(data.newSessionId);
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (document.getElementById('forkModal').classList.contains('open')) {
+        if (e.key === 'Escape') closeForkModal();
+        return;
+      }
+      if (e.key === 'ArrowLeft' || e.key === 'j') selectStep(selectedStepIdx - 1);
+      if (e.key === 'ArrowRight' || e.key === 'k') selectStep(selectedStepIdx + 1);
+      if (e.key === 'f' || e.key === 'F') openForkModal();
+    });
+
+    const sse = new EventSource('/events');
+    sse.onmessage = (msg) => {
+      try {
+        const ev = JSON.parse(msg.data);
+        if (ev.type && ev.type !== 'connected') {
+          document.getElementById('liveEventTicker').textContent =
+            `⚡ [${new Date(ev.timestamp).toLocaleTimeString()}] ${ev.type.toUpperCase()} (${ev.sessionId} #${ev.stepIdx ?? '-'}) — ${ev.detail || ''}`;
+          loadSessions();
+          if (ev.sessionId === currentSessionId) selectSession(currentSessionId);
+        }
+      } catch {}
+    };
+
+    loadSessions();
+  </script>
+</body>
+</html>
